@@ -1,1 +1,171 @@
-# CSE3209
+# string reverse Converter
+본 문서는 시스템 프로그래밍(CSE3209) Project에 관한 설명입니다. C언어에서 “문자열 뒤집기(string reverse)” 함수를 디자인하고 Static Linking, Dynamic Linking, Runtime Linking 하는 과정을 설명합니다.
+
+주된 목적은 문자열을 입력하면, 메모리 안에서 제자리(in-place)로 뒤집은 뒤 반환하는 간단하고 가벼운 라이브러리를 제공하는 것 입니다.
+
+## 🖥️ 개발환경
+
+OS : Ubuntu 20.04 LTS
+
+Compiler : GCC 9.4.0
+
+## 📁 리포지토리 구조
+```bash
+├── static_linking
+│   ├── main.c
+│   ├── str_reverse.c
+│   ├── str_reverse.h
+│   ├── str_reverse.o
+│   ├── libreverse.a
+│   └── exe_static
+├── dynamic_linking
+│   ├── main.c
+│   ├── str_reverse.c
+│   ├── str_reverse.h
+│   ├── str_reverse.o
+│   ├── libreverse.so
+│   └── exe_dynamic
+├── runtime_linking
+│   ├── main_runtime.c
+│   ├── str_reverse.c
+│   ├── str_reverse.h
+│   ├── str_reverse.o
+│   ├── libstr_reverse.so
+│   └── exe_runtime
+└── README.md
+```
+
+## 🔧 코드 설명
+### str_reverse.h
+다음의 헤더 파일은 str_reverse() 함수 프로토타입을 선언합니다.
+```c
+#ifndef STR_REVERSE_H
+#define STR_REVERSE_H
+
+char* str_reverse(char* str);
+
+#endif
+```
+### str_reverse.c
+다음의 c파일은 헤더 파일을 포함하고, 함수 정의를 구현합니다.
+기존 문자열을 메모리 안에서 제자리로 뒤집은 뒤 뒤집은 문자열을 반환하는 함수를 디자인하였습니다.
+```c
+#include <stddef.h>
+#include "str_reverse.h"
+
+char* str_reverse(char* str){
+	if(str == NULL) return NULL;
+
+	int left = 0;
+	int right = 0;
+
+	while(str[right] != '\0'){
+	   right++;
+	}
+	right--;
+
+	while(left < right){
+	   char temp = str[left];
+	   str[left] = str[right];
+	   str[right] = temp;
+
+	   left++;
+	   right--;
+	}
+	return str;
+}
+```
+### main.c
+라이브러리를 사용하는 메인 프로그램입니다.   
+기존 문자열과 str_reverse() 함수를 사용하여 뒤집은 문자열을 출력합니다.
+```c
+#include <stdio.h>
+#include "str_reverse.h"
+
+int main(){
+	char str[] = "System Programming is the best";
+	printf("Original : %s\n", str);
+	str_reverse(str);
+	printf("Reversed : %s\n", str);
+	return 0;
+}
+```
+### main_runtime.c
+Runtime Linking에서 사용되는 main 코드입니다.
+dl라이브러리를 사용해 런타임에 dynamic linking을 명시적으로 요청합니다. 
+dlopen과 dlsym을 이용해 동적으로 라이브러리를 로드하고 str_reverse() 함수를 호출합니다.
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <dlfcn.h>
+
+int main(){
+	void *handle;
+	char* (*str_reverse)(char*);
+	char *error;
+
+	handle = dlopen("./libstr_reverse.so", RTLD_LAZY);
+	if(!handle){
+	   fprintf(stderr, "%s\n", dlerror());
+	   exit(1);
+	}
+	
+	str_reverse = dlsym(handle, "str_reverse");
+	if((error = dlerror()) != NULL){
+	   fprintf(stderr, "%s\n", error);
+	   exit(1);
+	}
+	
+	char str[] = "Professor thank you for your hard work";
+	printf("Orginal : %s\n", str);
+	str_reverse(str);
+	printf("Reversed : %s\n", str);
+	
+	if(dlclose(handle) < 0){
+	   fprintf(stderr, "%s\n", dlerror());
+	   exit(1);
+	}
+	return 0;
+}
+```
+## Static Linking
+해당 과정의 실행은 static_linking 폴더에서 이루어집니다.
+1. object 파일 생성
+   str_reverse.c 파일을 gcc를 통해 컴파일하여 str_reverse.o 파일을 생성합니다.
+   `$ gcc -Og -c str_reverse.c -o str_reverse.o`
+2. 아카이브 파일(정적 라이브러리) 생성
+   str_reverse.o 파일을 ar -rcs 명령어를 통해 reverse.a를 생성합니다.
+   `$ ar -rcs libreverse.a str_reverse.o`
+3. 실행파일 생성
+   현재 디렉토리의 static library를 링크하고, exe_static 실행 파일을 생성합니다.
+   `$ gcc -static main.c -L. -lreverse -o exe_static`
+4. exe_static 파일을 실행합니다.
+   이미지1번
+## Dynamic Linking
+해당 과정의 실행은 dynamic_linking 폴더에서 이루어집니다.
+1. object 파일 생성
+   str_reverse.c 파일을 gcc를 통해 -fPIC로 컴파일하여 str_reverse.o 파일을 생성합니다.
+   `$ gcc -Og -c -fPIC str_reverse.c -o str_reverse.o`
+2. 동적 라이브러리 생성
+   str_reverse.o 파일을 -shared 명령어를 통해 reverse.so를 생성합니다.
+   `$ gcc -shared -o libreverse.so str_reverse.o`
+3. 현재 디렉토리의 shared library를 링크하고, exe_dynamic 실행 파일을 생성합니다.
+   `$ gcc main.c -L. -lreverse -o exe_dynamic`
+4. 현재 디렉토리를 동적 라이브러리 검색 경로로 만들어 환경변수를 설정합니다.
+   `$ export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH`
+5. exe_dynamic 파일을 실행합니다.
+   이미지2번
+## Runtime Linking
+해당 과정은 runtime_linking 폴더에서 이루어집니다.
+1. object 파일 생성
+   str_reverse.c 파일을 gcc를 통해 -fPIC로 컴파일하여 str_reverse.o 파일을 생성합니다.
+   `$ gcc -fPIC -c str_reverse.c -o str_reverse.o`
+2. 동적 라이브러리 생성
+   str_reverse.o 파일을 -shared 명령어를 통해 str_reverse.so를 생성합니다.
+   `$ gcc -shared -o libstr_reverse.so str_reverse.o`
+3. 런타임 링크를 사용하도록 수정된 main_runtime.c 파일을 컴파일하여 exe_runtime 파일을 생성합니다.
+   `$ gcc -rdynamic -o exe_runtime main_runtime.c -ldl`
+4. 현재 디렉토리를 동적 라이브러리 검색 경로로 만들어 환경변수를 설정합니다.
+   `$ export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH`
+5. exe_runtime 파일을 실행합니다.
+   이미지3번
