@@ -158,7 +158,7 @@ int main(){
    `$ gcc -static main.c -L. -lreverse -o exe_static`
 4. exe_static 파일을 실행합니다.
 
-   이미지1번
+   <img width="832" height="182" alt="Image" src="https://github.com/user-attachments/assets/cb748614-be5f-4b09-bfc7-46fde5224cde" />
 
 ---
 
@@ -182,7 +182,7 @@ int main(){
    `$ export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH`
 5. exe_dynamic 파일을 실행합니다.
 
-   이미지2번
+   <img width="833" height="233" alt="Image" src="https://github.com/user-attachments/assets/acb82809-a393-4b8f-b4a1-7b552f46116c" />
 
 ---
 
@@ -206,7 +206,7 @@ int main(){
    `$ export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH`
 9. exe_runtime 파일을 실행합니다.
 
-   이미지3번
+   <img width="837" height="233" alt="Image" src="https://github.com/user-attachments/assets/fcd334e2-a7f8-4d73-9381-c5d9f3707dc3" />
 
 ---
 
